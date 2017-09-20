@@ -1,0 +1,6 @@
+<swe:field name="multiplicity" xlink:href="http://data.fmi.fi/fmi-apikey/9b12a1f9-a329-4ccc-83c0-3d0084dfabe9/meta?observableProperty=forecast&amp;param=multiplicity&amp;language=eng"/>
+<swe:field name="peak_current" xlink:href="http://data.fmi.fi/fmi-apikey/9b12a1f9-a329-4ccc-83c0-3d0084dfabe9/meta?observableProperty=forecast&amp;param=peak_current&amp;language=eng"/>
+<swe:field name="cloud_indicator" xlink:href="http://data.fmi.fi/fmi-apikey/9b12a1f9-a329-4ccc-83c0-3d0084dfabe9/meta?observableProperty=forecast&amp;param=cloud_indicator&amp;language=eng"/>
+<swe:field name="ellipse_major" xlink:href="http://data.fmi.fi/fmi-apikey/9b12a1f9-a329-4ccc-83c0-3d0084dfabe9/meta?observableProperty=forecast&amp;param=ellipse_major&amp;language=eng"/>
+
+http://data.fmi.fi/fmi-apikey/9b12a1f9-a329-4ccc-83c0-3d0084dfabe9/wfs?request=getFeature&storedquery_id=fmi::observations::lightning::simple&bbox=19.2,58.9,31.5,70.0&parameters=peak_current&starttime=2017-08-12T20:00:00&endtime=2017-08-12T21:00:00
