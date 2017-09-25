@@ -1,6 +1,8 @@
 
-
-
+# Salama controller class used to control salama.py.
+# Class that contains all the required functionalities to
+# parse and use lightning observation data from FMI.
+# Ville Ilkka, 2017-
 
 # Use use the C implementation if possible, since it is
 # much faster and consumes significantly less memory
@@ -9,76 +11,97 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 import time
 import urllib2
 import sys
+import json
 
-class salamiclass:
+class salamaclass:
 
-    def dateinterval_check(self, starttime, endtime):
-    #    try:
-    #        int(datetime.datetime.strptime(starttime, "%Y-%m-%dT%H:%M:%S").strftime("%s"))
-    #    except ValueError:
-    #        print('starttime not a valid timestamp')
-    #    try:
-    #        int(datetime.datetime.strptime(endtime, "%Y-%m-%dT%H:%M:%S").strftime("%s"))            
-    #    except: ValueError:
-    #        print("endtime not a valid timestamp")
-        start = datetime.strptime(starttime, "%Y-%m-%dT%H:%M:%S")
-        end   = datetime.strptime(endtime, "%Y-%m-%dT%H:%M:%S")
-        start = time.mktime(start.timetuple())
-        end   = time.mktime(end.timetuple())
-        if(end - start > 168*60*60 or end - start < 0):
-            return False
-        else:
-            return True
-        
-            
+                    
     def debug(self, text):
-        print("TODO")
-    
+        print(text)
+
+
     def formatter(self, data, format, lines):
         # format data
         # default: ascii
-
         # if lines != -1, remove excess data
         output = []
         if(lines > 0):
-            # output only the number of lines amount of data
+            # output only the number of lines amount of data            
             output = data[::-1]
+            # output = data
             data = output[0:int(lines)]
-
         output = []
         if(format == "csv"):
             for row in data:
                 row = row.replace(" ", ",")
                 output.append(row)
             return output
-        
+        elif(format == "json"):
+            for row in data:
+                line = row.split(" ")
+                outputlist = {}
+                outputlist.update({"time": line[0]})
+                outputlist.update({"lat": line[1]})
+                outputlist.update({"lon ": line[2]})
+                outputlist.update({"peakcurrent": line[3]})
+                outputlist.update({"multiplicity": line[4]})
+                outputlist.update({"cloudindicator": line[5]})
+                outputlist.update({"ellipsemajor": line[6]})
+                output.append(outputlist)
+            #return output
+            jsondata = json.dumps(output)
+            return jsondata
+        else:
+            return data
+                
     
-    def test_connection():
-        print("TODO")
+    def check_date(self, starttime, endtime):
+        # Check that timestamps are valid and
+        # that starttime < endtime 
+        try:
+            time.strptime(starttime, "%Y-%m-%dT%H:%M:%S")
+            time.strptime(endtime, "%Y-%m-%dT%H:%M:%S")
+        except ValueError as error:
+            print(error)
+            return False
+        else:
+            # convert timestamps to seconds
+            start = datetime.strptime(starttime, "%Y-%m-%dT%H:%M:%S")
+            end   = datetime.strptime(endtime, "%Y-%m-%dT%H:%M:%S")
+            start = time.mktime(start.timetuple())
+            end   = time.mktime(end.timetuple())
+            if(end - start > 168*60*6):
+                self.debug("Time interval is more than 168 hours")
+
+                return starttime, endtime
+            elif(end - start < 0):
+                starttime, endtime = self.adjust_date(starttime, endtime)
+                self.debug("Starttime is greater than endtime -> adjust startime")
+                self.debug("Starttime: "+starttime)
+                self.debug("Endtime: "+endtime)
+                return starttime,endtime
+            else:
+                return starttime,endtime
+
             
-    def get_parameters(self, verbose, starttime, endtime, timestep,
-                       bbox, crs, format, lines):
+    def adjust_date(self, starttime, endtime):
+        endtime   = datetime.strptime(endtime, "%Y-%m-%dT%H:%M:%S").strftime('%Y-%m-%dT%H:%M:%S')
+        starttime = (datetime.strptime(endtime, "%Y-%m-%dT%H:%M:%S") - timedelta(hours=6)).strftime('%Y-%m-%dT%H:%M:%S')
+        return starttime,endtime
+
+    
+    def get_parameters(self, verbose, starttime, endtime,
+                       bbox, crs, format, lines, outputfile):
 
         parameters = {}        
         # Configuration directory
         # default: settings/
-        CNFDIR       = "settings/"
-        # verbose mode on/off
-        #verbose      = verbose
-        # timesettings and time step
-        #starttime    = starttime
-        #endtime      = endtime
-        #timestep     = timestep
-        # bbox and projection
-        #bbox         = bbox
-        projection   = crs
-        # format and number of lines to be returned
-        returnformat = format
-        lines        = lines
+        CNFDIR  = "settings/"
+
         # get apikey from cnf-file 
         try:
             with open(CNFDIR + 'controller.cnf') as f:
@@ -92,18 +115,19 @@ class salamiclass:
                         apikey = x.split('=', 1 )
         except Exception as error:
             print(error)
-    
+
         parameters.update({"verbose"    : verbose})
         parameters.update({"starttime"  : starttime})
         parameters.update({"endtime"    : endtime})
-        parameters.update({"timestep"   : timestep})
         parameters.update({"bbox"       : bbox})
-        parameters.update({"projection" : projection})
-        parameters.update({"format"     : returnformat})
+        parameters.update({"projection" : crs})
+        parameters.update({"format"     : format})
         parameters.update({"apikey"     : apikey})
         parameters.update({"lines"      : lines})
-
+        parameters.update({"outputfile" : outputfile})
+        
         return parameters
+
 
     
     # parse data from url
@@ -111,14 +135,16 @@ class salamiclass:
         
         starttime  = parameters['starttime']
         endtime    = parameters['endtime']
-        timestep   = str(parameters['timestep'])
         bbox       = parameters['bbox']
         projection = parameters['projection']
         format     = parameters['format']
         apikey     = parameters['apikey'][1]
         lines      = parameters['lines']
         params     = "peak_current,multiplicity,cloud_indicator,ellipse_major"
-        
+
+        # check taht time stamps are valid
+        starttime,endtime = self.check_date(starttime, endtime)
+
         url = ("http://data.fmi.fi/fmi-apikey/"+apikey+
                "/wfs?request=getFeature&storedquery_id=fmi::observations::lightning::simple"
                "&bbox="+bbox+
@@ -127,9 +153,8 @@ class salamiclass:
                "&endtime="+endtime
                )
 
-        # print(url)
         # get data from url
-        f = urllib2.urlopen(url,timeout=30)
+        f = urllib2.urlopen(url,timeout=5)
         tree = ET.ElementTree(file=f)
         root = tree.getroot()
         f.close()
@@ -137,7 +162,7 @@ class salamiclass:
         # data contains 4 parameters which are displayed one
         # after another. These parameters have same timestamps
         # and coordinates, so those needs to be outputted only once
-        # per observations.
+        # per observation.
         validparameters = ["peak_current", "multiplicity", "cloud_indicator", "ellipse_major"] 
         timestamps      = []
         values          = []
@@ -190,7 +215,7 @@ class salamiclass:
             data = outputtimes[i]+" "+outputcoordinates[i]+" "+outputarray[i].strip()
             output.append(data)
 
-        output = self.formatter(output, "csv", lines)
+        output = self.formatter(output, parameters['format'], lines)
         return output
 
         
