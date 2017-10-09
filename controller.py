@@ -35,6 +35,8 @@ class salamaclass:
             # output = data
             data = output[0:int(lines)]
         output = []
+        if(format == "array"):
+            return data
         if(format == "csv"):
             for row in data:
                 row = row.replace(" ", ",")
@@ -152,7 +154,7 @@ class salamaclass:
                "&starttime="+starttime+
                "&endtime="+endtime
                )
-
+        # print(url)
         # get data from url
         f = urllib2.urlopen(url,timeout=5)
         tree = ET.ElementTree(file=f)

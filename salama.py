@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 
 def main(argv):
 
+    #print(argv)
     salama = salamaclass()
         
     parser = argparse.ArgumentParser()
@@ -27,10 +28,13 @@ def main(argv):
 
     # set default vakues
     # timestaps and timestep
-    endtime    = endtime.strftime('%Y-%m-%dT%H:%M:%S')
-    starttime  = starttime.strftime('%Y-%m-%dT%H:%M:%S')
+    #endtime    = endtime.strftime('%Y-%m-%dT%H:%M:%S')
+    #starttime  = starttime.strftime('%Y-%m-%dT%H:%M:%S')
+    starttime   = '2017-08-12T19:00:00'
+    endtime     = '2017-08-12T20:00:23'
     # return format
-    format     = "ascii"
+    #format     = "ascii"
+    format     = "array"
     # bbox and projection
     bbox       = "19.2,58.7,31.7,70.6"
     projection = "EPSG::3067"
@@ -63,13 +67,16 @@ def main(argv):
     parameters = salama.get_parameters(verbose, starttime, endtime,
                                        bbox, projection, format, lines, outputfile)
     data = salama.parse_data(parameters)
-
+    
     if not data:
         print("No observations")
     else:
         # print data
         if(format == "json"):
             print(data)
+        if(format == "array"):
+            print(data);
+            return data
         else:
             for i in range(0,len(data)):
                 print(data[i])
