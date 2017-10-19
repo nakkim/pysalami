@@ -12,16 +12,29 @@ except ImportError:
     import xml.etree.ElementTree as ET
 
 from datetime import datetime, time, timedelta
+import mysql.connector
 import time
 import urllib2
 import sys
 import json
 
+# Configuration directory
+# default: settings/
+CNFDIR  = "settings/"
+
+
 class salamaclass:
 
-                    
+
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+
+    def set_verbose(self, verbose=True):
+        self.verbose = verbose
+
     def debug(self, text):
-        print(text)
+        if(self.verbose == True):
+            print(text)
 
 
     def formatter(self, data, format, lines):
@@ -31,7 +44,7 @@ class salamaclass:
         output = []
         if(lines > 0):
             # output only the number of lines amount of data            
-            output = data[::-1]
+            output = data
             # output = data
             data = output[0:int(lines)]
         output = []
@@ -95,15 +108,11 @@ class salamaclass:
         starttime = (datetime.strptime(endtime, "%Y-%m-%dT%H:%M:%S") - timedelta(hours=6)).strftime('%Y-%m-%dT%H:%M:%S')
         return starttime,endtime
 
-    
+
     def get_parameters(self, verbose, starttime, endtime,
                        bbox, crs, format, lines, outputfile):
 
         parameters = {}        
-        # Configuration directory
-        # default: settings/
-        CNFDIR  = "settings/"
-
         # get apikey from cnf-file 
         try:
             with open(CNFDIR + 'controller.cnf') as f:
@@ -114,7 +123,10 @@ class salamaclass:
                 # save parameters as an array
                 for x in content:
                     if(x[0] != '#'):
-                        apikey = x.split('=', 1 )
+                        param = x.split('=')
+                        if(param[0] == 'apikey'):
+                            apikey = x.split('=', 1)
+
         except Exception as error:
             print(error)
 
@@ -154,7 +166,9 @@ class salamaclass:
                "&starttime="+starttime+
                "&endtime="+endtime
                )
-        # print(url)
+
+        # disable system proxies
+        urllib2.getproxies = lambda: {}
         # get data from url
         f = urllib2.urlopen(url,timeout=5)
         tree = ET.ElementTree(file=f)
@@ -220,6 +234,61 @@ class salamaclass:
         output = self.formatter(output, parameters['format'], lines)
         return output
 
+
+
+    # inser data to database
+    def insert_db(self, lightningArray):
+
+        self.debug("Connect to database")
+        # get connection settings from cnf-file
+        try:
+            with open(CNFDIR + 'controller.cnf') as f:
+                content = f.readlines()
+                # remove white spaces and \n
+                content = [x.strip() for x in content]
+                # if first character is #, remove the line as a comment
+                # save parameters as an array
+                for x in content:
+                    if(x[0] != '#'):
+                        param = x.split('=')
+                        self.debug(param)
+                        if(param[0] == 'host'):
+                            host = x.split('=',1)
+                        if(param[0] == 'user'):
+                            user = x.split('=',1)
+                        if(param[0] == 'password'):
+                            password = x.split('=',1)
+                        if(param[0] == 'database'):
+                            database = x.split('=',1)
+                        if(param[0] == 'port'):
+                            port = x.split('=',1)
+        except Exception as error:
+            print(error)
+
+        cnx = mysql.connector.connect(host=host[1], port=port[1], user=user[1],
+                                      password=password[1], db=database[1])
+
+        cursor = cnx.cursor(prepared="true")
+
+        # add corresponding epoch time to data array
+        lightning = list()
+        for i in lightningArray:
+            data  = i.split()
+            epoch = int(time.mktime(datetime.strptime(data[0], "%Y-%m-%dT%H:%M:%SZ").timetuple()))
+            data.append(epoch)
+            lightning.append(data)
+
+        add_lightning = ("INSERT INTO salama"
+                         "(time, lat, lon, peakcurrent, multiplicity, cloudindicator, ellipsemajor, epoc) "
+                         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
+
+        # Insert lightning information
+        self.debug("Add data to database")
+        cursor.executemany(add_lightning, lightning)
+        cnx.commit()
+
+        cursor.close()
+        cnx.close()
         
 #if __name__ == '__main__':
     #salamiclass.run_class()

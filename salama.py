@@ -8,19 +8,19 @@ from datetime import datetime, timedelta
 
 def main(argv):
 
-    #print(argv)
     salama = salamaclass()
         
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose"   , help = "Verbose mode on")
     parser.add_argument("--starttime" , help = "Starttime in ISO format, default: 6 hours from now.")
     parser.add_argument("--endtime"   , help = "Endtime in ISO format, default: now.")
-    parser.add_argument("--format"    , help = "Supported return formats: ascii, csv")
+    parser.add_argument("--format"    , help = "Supported return formats: ascii, csv, json, array")
     parser.add_argument("--bbox"      , help = "lon,lat,lon,lat. default: 19.2,58.7,31.7,70.6.")
     parser.add_argument("--crs"       , help = "Projection, default: EPSG::3067.")
     parser.add_argument("--lines"     , help = "Set a maximum number of lightning observations to be returned.")
     parser.add_argument("--outputfile", help = "Set output file i.e. outputdata.csv")
-
+    parser.add_argument("--database"  , help = "Write data to database: on")
+    
     args = parser.parse_args()
 
     endtime    = datetime.now()
@@ -28,13 +28,10 @@ def main(argv):
 
     # set default vakues
     # timestaps and timestep
-    #endtime    = endtime.strftime('%Y-%m-%dT%H:%M:%S')
-    #starttime  = starttime.strftime('%Y-%m-%dT%H:%M:%S')
-    starttime   = '2017-08-12T19:00:00'
-    endtime     = '2017-08-12T20:00:23'
+    endtime    = endtime.strftime('%Y-%m-%dT%H:%M:%S')
+    starttime  = starttime.strftime('%Y-%m-%dT%H:%M:%S')
     # return format
-    #format     = "ascii"
-    format     = "array"
+    format     = "ascii"
     # bbox and projection
     bbox       = "19.2,58.7,31.7,70.6"
     projection = "EPSG::3067"
@@ -43,6 +40,7 @@ def main(argv):
     # number of observations
     lines      = -1
     outputfile = "-1"
+    database = "off"
     
     if(args.verbose):
         verbose = "on"
@@ -61,7 +59,9 @@ def main(argv):
     if(args.lines):
         lines   = args.lines
     if(args.outputfile):
-        outputfile   = args.outputfile
+        outputfile  = args.outputfile
+    if(args.database):
+        database = args.database
     
     # initialize parameters
     parameters = salama.get_parameters(verbose, starttime, endtime,
@@ -74,8 +74,9 @@ def main(argv):
         # print data
         if(format == "json"):
             print(data)
+            return(data)
         if(format == "array"):
-            print(data);
+            print(data)
             return data
         else:
             for i in range(0,len(data)):
@@ -87,6 +88,11 @@ def main(argv):
         f.write(data)
         f.close()
 
+    # write data to database if needed
+    if(database == "on"):
+        salama.insert_db(data)
+        
+    
 
 if __name__ == "__main__":
     main(sys.argv[1:])
