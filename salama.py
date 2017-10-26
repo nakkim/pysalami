@@ -4,6 +4,7 @@ import sys
 import argparse
 from controller import salamaclass
 from datetime import datetime, timedelta
+import numpy as np
 
 
 def main(argv):
@@ -82,11 +83,10 @@ def main(argv):
             for i in range(0,len(data)):
                 print(data[i])
         
-    # print data to a file is needed    
+    # print data to a file if needed    
     if(outputfile != "-1"):
-        f = open(str(outputfile), "w")
-        f.write(data)
-        f.close()
+        header = "time,lat,lon,peakcurrent,multiplicity,cloudindicator,ellipsemajor"
+        np.savetxt(str(outputfile), data, delimiter=",", fmt='%s', header=header)
 
     # write data to database if needed
     if(database == "on"):
