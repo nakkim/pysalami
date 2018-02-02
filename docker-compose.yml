@@ -1,0 +1,14 @@
+
+version: '2'
+
+services:
+
+  python-basemap:
+    image: python-basemap:dockerfile-1
+    volumes:
+      - /home/ilkkav/Desktop/koodia/salama.py:/($SMARTROOT)/data/salama
+    entrypoint:
+      - python
+      - salama.py
+      - --endtime=2017-08-12T22:00:00
+

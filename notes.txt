@@ -1,0 +1,2 @@
+docker build -t "python-test:dockerfile-1" .
+docker run python-test:dockerfile-1 python plotmap.py
