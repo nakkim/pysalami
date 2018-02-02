@@ -14,7 +14,10 @@ except ImportError:
 from datetime import datetime, time, timedelta
 import mysql.connector
 import time
-import urllib2
+try:
+    import urllib2
+except ImportError:
+    import urllib.request as urllib2
 import sys
 import json
 
