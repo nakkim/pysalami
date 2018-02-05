@@ -29,17 +29,15 @@ CNFDIR  = "settings/"
 class salamaclass:
 
 
-    def __init__(self, verbose=False):
+    def __init__(self, verbose):
         self.verbose = verbose
 
-    def set_verbose(self, verbose=True):
-        self.verbose = verbose
 
     def debug(self, text):
         if(self.verbose == True):
             print(text)
 
-
+            
     def formatter(self, data, format, lines):
         # format data
         # default: ascii
@@ -94,9 +92,16 @@ class salamaclass:
             end   = time.mktime(end.timetuple())
             if(end - start > 168*60*6):
                 self.debug("Time interval is more than 168 hours")
-
+                self.debug("Adjust endtime to starttime + 12 hours")
+                start = datetime.strptime(starttime, "%Y-%m-%dT%H:%M:%S")
+                end   = start + timedelta(hours=12)
+                endtime    = end.strftime('%Y-%m-%dT%H:%M:%S')
+                starttime  = start.strftime('%Y-%m-%dT%H:%M:%S')
+                self.debug("starttime: " + starttime)
+                self.debug("endtime: " + endtime)
                 return starttime, endtime
             elif(end - start < 0):
+                self.debug("endtime < startime")
                 starttime, endtime = self.adjust_date(starttime, endtime)
                 self.debug("Starttime is greater than endtime -> adjust startime")
                 self.debug("Starttime: "+starttime)
@@ -169,7 +174,6 @@ class salamaclass:
                "&starttime="+starttime+
                "&endtime="+endtime
                )
-
         # disable system proxies
         urllib2.getproxies = lambda: {}
         # get data from url

@@ -9,10 +9,9 @@ import numpy as np
 
 def main(argv):
 
-    salama = salamaclass()
         
     parser = argparse.ArgumentParser()
-    parser.add_argument("--verbose"   , help = "Verbose mode on")
+    parser.add_argument("-v", "--verbose", action="store_true", help = "Verbose mode")
     parser.add_argument("--starttime" , help = "Starttime in ISO format, default: 6 hours from now.")
     parser.add_argument("--endtime"   , help = "Endtime in ISO format, default: now.")
     parser.add_argument("--format"    , help = "Supported return formats: ascii, csv, json, array")
@@ -37,14 +36,12 @@ def main(argv):
     bbox       = "19.2,58.7,31.7,70.6"
     projection = "EPSG::3067"
     # verbose mode
-    verbose    = "off"
+    verbose    = False
     # number of observations
     lines      = -1
     outputfile = "-1"
     database = "off"
     
-    if(args.verbose):
-        verbose = "on"
     if(args.starttime):
         starttime = args.starttime
     if(args.endtime):
@@ -56,14 +53,18 @@ def main(argv):
     if(args.crs):
         projection = args.crs
     if(args.verbose):
-        verbose = "on"
+        verbose = True
     if(args.lines):
         lines   = args.lines
     if(args.outputfile):
         outputfile  = args.outputfile
     if(args.database):
         database = args.database
-    
+
+
+    # create salama class    
+    salama = salamaclass(verbose)
+        
     # initialize parameters
     parameters = salama.get_parameters(verbose, starttime, endtime,
                                        bbox, projection, format, lines, outputfile)
